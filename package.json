@@ -1,0 +1,30 @@
+{
+  "name": "wayvee-backend",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.30.6",
+    "tsx": "^4.19.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --watch run index.ts ",
+    "db:migrate": "tsx ./src/db/index.ts"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.3",
+    "@neondatabase/serverless": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.1",
+    "hono": "^4.7.5",
+    "jsonwebtoken": "^9.0.2",
+    "twilio": "^5.5.1",
+    "zod": "^3.24.2"
+  }
+}
