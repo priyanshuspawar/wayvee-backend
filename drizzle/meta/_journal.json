@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1743250016010,
-      "tag": "0000_luxuriant_dreadnoughts",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1743529647587,
-      "tag": "0001_silky_loners",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1743533484752,
-      "tag": "0002_lean_swordsman",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1743533832348,
-      "tag": "0003_naive_misty_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1743534129346,
-      "tag": "0004_uneven_phalanx",
+      "when": 1743756357380,
+      "tag": "0000_bent_thunderbolts",
       "breakpoints": true
     }
   ]

@@ -1,11 +1,121 @@
 {
-  "id": "538ad128-3f5b-4884-b30b-47aff3597cd5",
+  "id": "2b2f3deb-f5a5-446f-9ab8-99a5a33134f9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.user": {
-      "name": "user",
+    "public.agents": {
+      "name": "agents",
+      "schema": "",
+      "columns": {
+        "userid": {
+          "name": "userid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "agency_name": {
+          "name": "agency_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "about": {
+          "name": "about",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rating": {
+          "name": "rating",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "membership": {
+          "name": "membership",
+          "type": "membership",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'regular'"
+        },
+        "services_offered": {
+          "name": "services_offered",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "geometry(point)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "agent_userid_index": {
+          "name": "agent_userid_index",
+          "columns": [
+            {
+              "expression": "userid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "agents_spatial_index": {
+          "name": "agents_spatial_index",
+          "columns": [
+            {
+              "expression": "location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agents_userid_users_id_fk": {
+          "name": "agents_userid_users_id_fk",
+          "tableFrom": "agents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userid"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
       "schema": "",
       "columns": {
         "id": {
@@ -42,9 +152,16 @@
         },
         "phone_number": {
           "name": "phone_number",
-          "type": "integer",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
+        },
+        "picture": {
+          "name": "picture",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         },
         "country_code": {
           "name": "country_code",
@@ -64,6 +181,19 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "is_member": {
+          "name": "is_member",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "dateOfBirth": {
+          "name": "dateOfBirth",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -112,15 +242,15 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "user_email_unique": {
-          "name": "user_email_unique",
+        "users_email_unique": {
+          "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
           ]
         },
-        "user_phone_number_unique": {
-          "name": "user_phone_number_unique",
+        "users_phone_number_unique": {
+          "name": "users_phone_number_unique",
           "nullsNotDistinct": false,
           "columns": [
             "phone_number"
@@ -130,9 +260,190 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.stays": {
+      "name": "stays",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "host_id": {
+          "name": "host_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "geometry(point)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_images": {
+          "name": "display_images",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rooms_description": {
+          "name": "rooms_description",
+          "type": "json[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "perks": {
+          "name": "perks",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_guest": {
+          "name": "base_guest",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price_per_night": {
+          "name": "price_per_night",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "per_person_increment": {
+          "name": "per_person_increment",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_occupancy": {
+          "name": "max_occupancy",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amenities": {
+          "name": "amenities",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "availability": {
+          "name": "availability",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_points": {
+          "name": "key_points",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rating": {
+          "name": "rating",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "discount": {
+          "name": "discount",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        }
+      },
+      "indexes": {
+        "stays_spatial_index": {
+          "name": "stays_spatial_index",
+          "columns": [
+            {
+              "expression": "location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        },
+        "stays_id_index": {
+          "name": "stays_id_index",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "stays_hostid_index": {
+          "name": "stays_hostid_index",
+          "columns": [
+            {
+              "expression": "host_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "stays_host_id_users_id_fk": {
+          "name": "stays_host_id_users_id_fk",
+          "tableFrom": "stays",
+          "tableTo": "users",
+          "columnsFrom": [
+            "host_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.membership": {
+      "name": "membership",
+      "schema": "public",
+      "values": [
+        "regular",
+        "pro"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},
