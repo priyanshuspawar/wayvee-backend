@@ -9,6 +9,7 @@ import {
   geometry,
   json,
   index,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 
@@ -63,6 +64,8 @@ export const stays = pgTable(
       .notNull()
       .default("0"),
     discount: decimal("discount", { precision: 8, scale: 2 }).default("0"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
     index("stays_spatial_index").using("gist", t.location),

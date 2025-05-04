@@ -2,27 +2,65 @@ import { Hono } from "hono";
 import db from "../../db";
 import z, { number } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { getAuthenticatedUser } from "../auth/functions";
+import { getAuthenticatedUser, getUser } from "../auth/functions";
 import { createStaySchema, stays, updateStaySchema } from "../../db/schema";
 import { eq } from "drizzle-orm";
+import { jwt, type JwtVariables } from "hono/jwt";
 
 const getStaysQuery = z.object({
   page: z.string().min(1).default("1").optional(),
   limit: z.string().min(2).default("10").optional(),
 });
+const JWT_SECRET = process.env.JWT_SECRET!;
 
+type Variables = JwtVariables<{ userId: string }>;
 const stayRoute = new Hono()
   .get("/", zValidator("query", getStaysQuery), async (c) => {
     try {
       const { page, limit } = c.req.valid("query");
-      const stays = await db.query.stays.findMany({ limit: Number(limit) });
+      const stays = await db.query.stays.findMany({
+        columns: {
+          id: true,
+          perks: true,
+          title: true,
+          rating: true,
+          pricePerNight: true,
+          baseGuest: true,
+          displayImages: true,
+          discount: true,
+          location: true,
+        },
+        limit: Number(limit),
+      });
       return c.json({ message: "Fetched stays", data: stays });
     } catch (error) {
       return c.json({ message: "Failed to fetch stays" }, 500);
     }
   })
+  .get(
+    "/:id",
+    zValidator("param", z.object({ id: z.string().uuid() })),
+    async (c) => {
+      try {
+        const { id } = c.req.valid("param");
+        const stay = await db.query.stays.findFirst({
+          where: (stays, { eq }) => eq(stays.id, id),
+        });
+        if (!stay) {
+          return c.json({ message: "Stay not found" }, 404);
+        }
+        return c.json({ message: "Fetched stay", data: stay });
+      } catch (error) {
+        return c.json({ message: "Failed to fetch stays" }, 500);
+      }
+    }
+  )
   .post(
-    getAuthenticatedUser,
+    "/",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser,
     zValidator("json", createStaySchema),
     async (c) => {
       try {
@@ -46,6 +84,10 @@ const stayRoute = new Hono()
   )
   .delete(
     "/",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser,
     zValidator("json", z.object({ stayId: z.string().uuid() })),
     async (c) => {
       try {
@@ -71,25 +113,33 @@ const stayRoute = new Hono()
       }
     }
   )
-  .patch("/", zValidator("json", updateStaySchema), async (c) => {
-    try {
-      const loggedInUser = c.get("user");
-      if (!loggedInUser.isAgent) {
-        return c.json({ message: "Only agents can update stays" }, 403);
+  .patch(
+    "/",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser,
+    zValidator("json", updateStaySchema),
+    async (c) => {
+      try {
+        const loggedInUser = c.get("user");
+        if (!loggedInUser.isAgent) {
+          return c.json({ message: "Only agents can update stays" }, 403);
+        }
+        const stayData = c.req.valid("json");
+        const stay = await db.query.stays.findFirst({
+          where: (stays, { eq, and }) =>
+            and(eq(stays.id, stayData.id), eq(stays.hostId, loggedInUser.id)),
+        });
+        if (!stay) {
+          return c.json({ message: "Stay not found" }, 404);
+        }
+        await db.update(stays).set(stayData).where(eq(stays.id, stayData.id));
+        return c.json({ message: "Stay updated successfully" });
+      } catch (error) {
+        return c.json({ message: "Failed to update stay" }, 500);
       }
-      const stayData = c.req.valid("json");
-      const stay = await db.query.stays.findFirst({
-        where: (stays, { eq, and }) =>
-          and(eq(stays.id, stayData.id), eq(stays.hostId, loggedInUser.id)),
-      });
-      if (!stay) {
-        return c.json({ message: "Stay not found" }, 404);
-      }
-      await db.update(stays).set(stayData).where(eq(stays.id, stayData.id));
-      return c.json({ message: "Stay updated successfully" });
-    } catch (error) {
-      return c.json({ message: "Failed to update stay" }, 500);
     }
-  });
+  );
 
 export default stayRoute;

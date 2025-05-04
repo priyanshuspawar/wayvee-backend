@@ -8,26 +8,50 @@ import { z } from "zod";
 const utapi = new UTApi();
 
 const uploadRoute = new Hono()
-  .post("/", getAuthenticatedUser, async (c) => {
+  .post("/", async (c) => {
     try {
       const body = await c.req.parseBody({ all: true });
-      const files = body["files"] as File[];
-      files.forEach((file) => {
-        if (!file.type.startsWith("image/")) {
+
+      let files = body["files"];
+
+      // 🔁 Normalize to array
+      if (!files) {
+        return c.json({ message: "No files uploaded" }, 400);
+      }
+
+      if (!Array.isArray(files)) {
+        files = [files];
+      }
+
+      const validatedFiles: File[] = [];
+
+      for (const file of files) {
+        if (!(file instanceof File)) {
+          console.warn("Skipping invalid file:", file);
+          continue;
+        }
+
+        if (!file.type?.startsWith("image/")) {
           return c.json({ message: "Please upload images only" }, 400);
         }
-      });
+
+        validatedFiles.push(file);
+      }
+
       const uploadResult = await Promise.all(
-        files.map(async (file) => {
+        validatedFiles.map(async (file) => {
           const id = nanoid(8);
-          const fileObj = new File([file], id);
+          const fileObj = new File([file], id); // Optional: Wrap again for naming
           const upload = await utapi.uploadFiles(fileObj);
           return upload.data;
         })
       );
-      const uploadedImages = uploadResult.map((v) => {
-        return { imgUrl: v?.ufsUrl || "", id: v?.key };
-      });
+
+      const uploadedImages = uploadResult.map((v) => ({
+        imgUrl: v?.ufsUrl || "",
+        id: v?.key,
+      }));
+
       return c.json({ message: "Finished upload", data: uploadedImages });
     } catch (err) {
       console.error(err);

@@ -1,13 +1,25 @@
 import { Hono } from "hono";
-import { getAuthenticatedUser } from "../auth/functions";
+import { getUser } from "../auth/functions";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 import db from "../../db";
 import { applyForAgentSchema, users } from "../../db/schema";
 import { agents } from "../../db/schema/agents";
+import { jwt, type JwtVariables } from "hono/jwt";
 
-const userRoute = new Hono()
-  .get(getAuthenticatedUser, async (c) => {
+const JWT_SECRET = process.env.JWT_SECRET!;
+
+type Variables = JwtVariables<{ userId: string }>;
+
+const userRoute = new Hono<{ Variables: Variables }>()
+  .use(
+    "*",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser
+  )
+  .get(async (c) => {
     try {
       const user = c.get("user");
       return c.json({ message: "user fetched successfully", data: user });
@@ -17,7 +29,6 @@ const userRoute = new Hono()
   })
   .post(
     "/upload_id",
-    getAuthenticatedUser,
     zValidator("json", z.object({ id_key: z.string() })),
     async (c) => {
       try {
@@ -39,7 +50,6 @@ const userRoute = new Hono()
   )
   .post(
     "/apply_for_agent",
-    getAuthenticatedUser,
     zValidator("json", applyForAgentSchema),
     async (c) => {
       try {
@@ -66,7 +76,7 @@ const userRoute = new Hono()
       }
     }
   )
-  .post("/upgrade/membership", getAuthenticatedUser)
-  .get("/my-bookings", getAuthenticatedUser);
+  .post("/upgrade/membership")
+  .get("/my-bookings");
 
 export default userRoute;

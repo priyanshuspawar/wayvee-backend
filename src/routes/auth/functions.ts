@@ -1,13 +1,14 @@
 import { type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { z } from "zod";
+import z from "zod";
 import type { User } from "../../db/schema/users";
 import { randomInt } from "crypto";
-import { sign, verify } from "hono/jwt";
+import { sign, verify, type JwtVariables } from "hono/jwt";
 import db from "../../db";
 import { createMiddleware } from "hono/factory";
+import { userSelectSchema } from "../../db/schema/users";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_REFRESH_SECRET = process.env.JWT_SECRET || "refreshsupersecretkey";
 
 type Env = {
@@ -22,6 +23,40 @@ type SessionManager = {
   refresh_access_token: () => Promise<string>;
   removeSessionItem: (key: string) => Promise<void>;
   destroySession: () => Promise<void>;
+};
+
+type Variables = JwtVariables<{ userId: string }> & {
+  user: z.infer<typeof userSelectSchema>;
+};
+
+export const getUser = createMiddleware(
+  async (c: Context<{ Variables: Variables }>, next) => {
+    try {
+      const { userId } = c.get("jwtPayload");
+      if (!userId) {
+        return c.json({ message: "unauthorized" }, 401);
+      }
+      const validUser = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, userId),
+      });
+      if (!validUser) {
+        return c.json({ message: "user not found" }, 404);
+      }
+      c.set("user", validUser);
+      await next();
+    } catch (error) {
+      return c.json({ message: "unauthorized" }, 401);
+    }
+  }
+);
+
+export const generateAuthTokens = async (payload: any) => {
+  try {
+    const access_token = await sign(payload, JWT_SECRET);
+    return access_token;
+  } catch (error) {
+    return null;
+  }
 };
 
 const access_token_payload_schema = z.object({
