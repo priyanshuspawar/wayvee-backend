@@ -22,9 +22,9 @@ export const users = pgTable(
     lastname: varchar("lastname", { length: 255 }).notNull(),
     email: varchar("email", { length: 255 }).notNull().unique(),
     verified: boolean("verified").notNull().default(false),
-    phoneNumber: varchar("phone_number").notNull().unique(),
+    // phoneNumber: varchar("phone_number"),
     picture: varchar("picture").notNull().default(""),
-    countryCode: varchar("country_code", { length: 255 }).notNull(),
+    countryCode: varchar("country_code", { length: 255 }).default("IN"),
     governmentId: varchar("government_id", { length: 255 }),
     isAgent: boolean("is_agent").notNull().default(false),
     isMember: boolean("is_member").notNull().default(false),
@@ -35,7 +35,7 @@ export const users = pgTable(
   (table) => ({
     userIndex: uniqueIndex("user_id_phone_number_email_index").on(
       table.id,
-      table.phoneNumber,
+      // table.phoneNumber,
       table.email
     ),
   })
@@ -49,7 +49,7 @@ export const userUpdateSchema = createUpdateSchema(users).omit({
   lastname: true,
   email: true,
   verified: true,
-  phoneNumber: true,
+  // phoneNumber: true,
   countryCode: true,
   isAgent: true,
   isMember: true,

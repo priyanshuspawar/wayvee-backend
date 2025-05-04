@@ -72,42 +72,63 @@ const authRoute = new Hono()
       return c.json({ message: "Failed to verify user" }, 500);
     }
   })
-  .post("/register", zValidator("json", userInsertSchema), async (c) => {
-    try {
-      const registerFields = c.req.valid("json");
-      //check user exits
-      const userExists = await db.query.users.findFirst({
-        where: (users, { eq, and }) =>
-          and(
-            eq(users.phoneNumber, registerFields.phoneNumber),
-            eq(users.email, registerFields.email)
-          ),
-      });
-      if (userExists) {
-        return c.json({ message: "User already exists" }, 409);
+  .post(
+    "/register",
+    // zValidator(
+    //   "json",
+    //   z.object({
+    //     email: z.string(),
+    //     firstName: z.string(),
+    //     lastName: z.string(),
+    //     dateOfBirth: z.string(),
+    //   })
+    // ),
+    async (c) => {
+      try {
+        const registerFields = await c.req.json();
+        const dbFields = {
+          email: registerFields.email,
+          firstname: registerFields.firstname,
+          lastname: registerFields.lastname,
+          dateOfBirth: registerFields.dateOfBirth,
+        };
+        // console.log(dbFields);
+        // //check user exits
+        // console.log(registerFields);
+        const userExists = await db.query.users.findFirst({
+          where: (users, { eq, or }) =>
+            // or(
+            // eq(users.phoneNumber, registerFields.phoneNumber),
+            eq(users.email, registerFields.email),
+          // ),
+        });
+        // console.log("@", userExists);
+        if (userExists) {
+          return c.json({ message: "User already exists" }, 409);
+        }
+        const [new_user] = await db
+          .insert(users)
+          .values(dbFields)
+          .returning({ id: users.id });
+        const token = await generateAuthTokens({ userId: new_user.id });
+        if (!token) {
+          return c.json({ message: "Failed to complete the process" }, 400);
+        }
+        return c.json({
+          message: "User created successfully",
+          token,
+          data: new_user,
+        });
+      } catch (error) {
+        console.error(error);
+        return c.json(
+          {
+            message: "An unknown error occured",
+          },
+          500
+        );
       }
-      const [new_user] = await db
-        .insert(users)
-        .values(registerFields)
-        .returning({ id: users.id });
-      const token = await generateAuthTokens({ userId: new_user.id });
-      if (!token) {
-        return c.json({ message: "Failed to complete the process" }, 400);
-      }
-      return c.json({
-        message: "User created successfully",
-        token,
-        data: new_user,
-      });
-    } catch (error) {
-      console.error(error);
-      return c.json(
-        {
-          message: "An unknown error occured",
-        },
-        500
-      );
     }
-  });
+  );
 
 export default authRoute;
