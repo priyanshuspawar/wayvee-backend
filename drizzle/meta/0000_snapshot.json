@@ -1,5 +1,5 @@
 {
-  "id": "2b2f3deb-f5a5-446f-9ab8-99a5a33134f9",
+  "id": "5bab9fbf-3b8e-475e-a575-7c93c1a7b593",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -53,12 +53,6 @@
           "type": "text[]",
           "primaryKey": false,
           "notNull": true
-        },
-        "location": {
-          "name": "location",
-          "type": "geometry(point)",
-          "primaryKey": false,
-          "notNull": true
         }
       },
       "indexes": {
@@ -76,9 +70,77 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agents_userid_users_id_fk": {
+          "name": "agents_userid_users_id_fk",
+          "tableFrom": "agents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userid"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.agent_locations": {
+      "name": "agent_locations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "agents_spatial_index": {
-          "name": "agents_spatial_index",
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "geometry(point)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "agent_id_index": {
+          "name": "agent_id_index",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "agent_locations_spatial_index": {
+          "name": "agent_locations_spatial_index",
           "columns": [
             {
               "expression": "location",
@@ -94,15 +156,15 @@
         }
       },
       "foreignKeys": {
-        "agents_userid_users_id_fk": {
-          "name": "agents_userid_users_id_fk",
-          "tableFrom": "agents",
-          "tableTo": "users",
+        "agent_locations_agent_id_agents_userid_fk": {
+          "name": "agent_locations_agent_id_agents_userid_fk",
+          "tableFrom": "agent_locations",
+          "tableTo": "agents",
           "columnsFrom": [
-            "userid"
+            "agent_id"
           ],
           "columnsTo": [
-            "id"
+            "userid"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -150,12 +212,6 @@
           "notNull": true,
           "default": false
         },
-        "phone_number": {
-          "name": "phone_number",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
         "picture": {
           "name": "picture",
           "type": "varchar",
@@ -167,7 +223,8 @@
           "name": "country_code",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'IN'"
         },
         "government_id": {
           "name": "government_id",
@@ -221,12 +278,6 @@
               "nulls": "last"
             },
             {
-              "expression": "phone_number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
               "expression": "email",
               "isExpression": false,
               "asc": true,
@@ -248,13 +299,6 @@
           "columns": [
             "email"
           ]
-        },
-        "users_phone_number_unique": {
-          "name": "users_phone_number_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "phone_number"
-          ]
         }
       },
       "policies": {},
@@ -272,6 +316,13 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "is_published": {
+          "name": "is_published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "host_id": {
           "name": "host_id",
           "type": "uuid",
@@ -282,73 +333,89 @@
           "name": "title",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "location": {
           "name": "location",
           "type": "geometry(point)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "display_images": {
           "name": "display_images",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rooms_description": {
-          "name": "rooms_description",
           "type": "json[]",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'{}'"
         },
         "perks": {
           "name": "perks",
           "type": "text[]",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'{}'"
         },
         "base_guest": {
           "name": "base_guest",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": 1
+        },
+        "bedrooms": {
+          "name": "bedrooms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bathrooms": {
+          "name": "bathrooms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "price_per_night": {
           "name": "price_per_night",
           "type": "numeric(8, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "per_person_increment": {
           "name": "per_person_increment",
           "type": "numeric(8, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "max_occupancy": {
           "name": "max_occupancy",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "amenities": {
           "name": "amenities",
           "type": "text[]",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'{}'"
         },
         "availability": {
           "name": "availability",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "key_points": {
-          "name": "key_points",
-          "type": "json",
+        "type_of_stay": {
+          "name": "type_of_stay",
+          "type": "char",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "property_access": {
+          "name": "property_access",
+          "type": "char",
+          "primaryKey": false,
+          "notNull": false
         },
         "rating": {
           "name": "rating",
@@ -363,6 +430,26 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'0'"
+        },
+        "address": {
+          "name": "address",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {

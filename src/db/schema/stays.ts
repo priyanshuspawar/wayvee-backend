@@ -19,51 +19,58 @@ export const stays = pgTable(
   "stays",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    isPublished: boolean("is_published").notNull().default(false),
     hostId: uuid("host_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    title: varchar("title", { length: 255 }).notNull(),
+    title: varchar("title", { length: 255 }),
+    description: varchar("description", { length: 500 }),
     location: geometry("location", {
       type: "point",
       mode: "xy",
       srid: 4326,
-    }).notNull(),
-    displayImages: text("display_images").array().notNull(),
-    roomsDescription: json("rooms_description")
+    }),
+    displayImages: json("display_images")
       .$type<{
         id: string;
-        roomName: string;
-        bedtype: string | null;
-        images: Array<{ key: string; url: string }>;
-        bathroom_included: boolean;
+        imageUrl: string;
+        type: string;
       }>()
       .array()
-      .notNull(),
-    perks: text("perks").array().notNull(),
-    baseGuest: integer("base_guest").notNull(),
+      .default([]),
+
+    perks: text("perks").array().default([]),
+    baseGuest: integer("base_guest").default(1),
+    bedrooms: integer("bedrooms"),
+    bathrooms: integer("bathrooms"),
+    currentTab: integer("current_tab").default(1),
     pricePerNight: decimal("price_per_night", {
       precision: 8,
       scale: 2,
-    }).notNull(),
+    }),
     perPersonIncrement: decimal("per_person_increment", {
       precision: 8,
       scale: 2,
-    }).notNull(),
-    maxOccupancy: integer("max_occupancy").notNull(),
-    amenities: text("amenities").array().notNull(),
-    availability: boolean("availability").notNull(),
-    keyPoints: json("key_points")
-      .$type<{
-        houseRules: Array<{ key: string; rule: string }>;
-        thingsToRemeber: Array<{ key: string; point: string }>;
-        tips: Array<{ key: string; tip: string }>;
-      }>()
-      //TODO:fix typo thingsToRemeber to thingsToRemember
-      .notNull(),
+    }),
+    maxOccupancy: integer("max_occupancy"),
+    amenities: text("amenities").array().default([]),
+    availability: boolean("availability"),
+    typeOfStay: varchar("type_of_stay", { length: 20 }),
+    propertyAccess: varchar("property_access", { length: 20 }),
+
     rating: decimal("rating", { precision: 8, scale: 2 })
       .notNull()
       .default("0"),
     discount: decimal("discount", { precision: 8, scale: 2 }).default("0"),
+    address: json("address").$type<{
+      name: string;
+      street_address: string;
+      nearby_landmark: string;
+      district: string;
+      city: string;
+      state: string;
+      pincode: string;
+    }>(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -81,6 +88,8 @@ export const updateStaySchema = createUpdateSchema(stays)
   .omit({
     hostId: true,
     rating: true,
+    createdAt: true,
+    updatedAt: true,
   })
   .required({
     id: true,

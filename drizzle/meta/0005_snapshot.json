@@ -1,6 +1,6 @@
 {
-  "id": "68483697-e0e9-41f8-9fc6-cf644817fe55",
-  "prevId": "6f36ddfe-2a21-412d-9b8f-3717cd268a90",
+  "id": "f82f2ae6-a2c8-48e2-ad7b-e4cd28eb8709",
+  "prevId": "68332cd8-8e45-4747-ae86-870b83a81895",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -335,6 +335,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "description": {
+          "name": "description",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "location": {
           "name": "location",
           "type": "geometry(point)",
@@ -414,13 +420,13 @@
         },
         "type_of_stay": {
           "name": "type_of_stay",
-          "type": "char(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },
         "property_access": {
           "name": "property_access",
-          "type": "char(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },

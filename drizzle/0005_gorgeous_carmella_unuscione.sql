@@ -1,0 +1,1 @@
+ALTER TABLE "stays" ADD COLUMN "description" varchar(500);

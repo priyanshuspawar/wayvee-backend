@@ -1,0 +1,1 @@
+ALTER TABLE "stays" ADD COLUMN "current_tab" integer DEFAULT 0;

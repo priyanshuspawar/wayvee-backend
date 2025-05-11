@@ -1,13 +1,25 @@
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { UTApi } from "uploadthing/server";
-import { getAuthenticatedUser } from "../auth/functions";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import { jwt, type JwtVariables } from "hono/jwt";
+import { getUser } from "../auth/functions";
 
 const utapi = new UTApi();
 
-const uploadRoute = new Hono()
+const JWT_SECRET = process.env.JWT_SECRET!;
+
+type Variables = JwtVariables<{ userId: string }>;
+
+const uploadRoute = new Hono<{ Variables: Variables }>()
+  .use(
+    "*",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser
+  )
   .post("/", async (c) => {
     try {
       const body = await c.req.parseBody({ all: true });
@@ -60,7 +72,6 @@ const uploadRoute = new Hono()
   })
   .delete(
     "/",
-    getAuthenticatedUser,
     zValidator("json", z.object({ keys: z.array(z.string()) })),
     async (c) => {
       try {
@@ -78,7 +89,7 @@ const uploadRoute = new Hono()
       }
     }
   )
-  .post("/government_id", getAuthenticatedUser, async (c) => {
+  .post("/government_id", async (c) => {
     try {
       const body = await c.req.parseBody();
       const id_file = body["file[]"] as File;
@@ -101,7 +112,6 @@ const uploadRoute = new Hono()
   .delete(
     "/government_id",
     zValidator("json", z.object({ key: z.string() })),
-    getAuthenticatedUser,
     async (c) => {
       try {
         const { key } = c.req.valid("json");

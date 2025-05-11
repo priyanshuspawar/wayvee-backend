@@ -27,16 +27,8 @@ export const agents = pgTable(
     verified: boolean("verified").default(false),
     membership: membershipEnum("membership").default("regular"),
     servicesOffered: text("services_offered").array().notNull(),
-    location: geometry("location", {
-      type: "point",
-      mode: "xy",
-      srid: 4326,
-    }).notNull(),
   },
-  (t) => [
-    index("agent_userid_index").on(t.userid),
-    index("agents_spatial_index").using("gist", t.location),
-  ]
+  (t) => [index("agent_userid_index").on(t.userid)]
 );
 
 export const applyForAgentSchema = createInsertSchema(agents).omit({
