@@ -50,6 +50,20 @@
       "when": 1746998763840,
       "tag": "0006_bizarre_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1747009788937,
+      "tag": "0007_cuddly_ironclad",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1747013275242,
+      "tag": "0008_lame_inertia",
+      "breakpoints": true
     }
   ]
 }

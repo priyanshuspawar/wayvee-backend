@@ -39,6 +39,29 @@ const userRoute = new Hono<{ Variables: Variables }>()
       return c.json({ message: "failed to fetch user" }, 500);
     }
   })
+  .get(
+    "/:agentId",
+    zValidator("param", z.object({ agentId: z.string().uuid() })),
+    async (c) => {
+      try {
+        const loggedInUser = c.get("user");
+        const { agentId } = c.req.valid("param");
+        if (agentId === loggedInUser.id) {
+          return c.json({ message: "Cannot send message to yourself" }, 401);
+        }
+        const user = await db.query.users.findFirst({
+          where: (users, { eq, and }) =>
+            and(eq(users.id, agentId), eq(users.isAgent, true)),
+        });
+        if (!user) {
+          return c.json({ message: "not found" }, 404);
+        }
+        return c.json({ data: user });
+      } catch (error) {
+        return c.json({ message: "failed to fetch user" }, 500);
+      }
+    }
+  )
   .post(
     "/upload_id",
     zValidator("json", z.object({ id_key: z.string() })),

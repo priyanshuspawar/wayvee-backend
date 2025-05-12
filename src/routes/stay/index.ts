@@ -3,9 +3,15 @@ import db from "../../db";
 import z, { number } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { getAuthenticatedUser, getUser } from "../auth/functions";
-import { createStaySchema, stays, updateStaySchema } from "../../db/schema";
+import {
+  createStaySchema,
+  stays,
+  updateStaySchema,
+  wishlist,
+} from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { jwt, type JwtVariables } from "hono/jwt";
+import searchRoute from "./search";
 
 const getStaysQuery = z.object({
   page: z.string().min(1).default("1").optional(),
@@ -15,41 +21,72 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 type Variables = JwtVariables<{ userId: string }>;
 const stayRoute = new Hono()
-  .get("/", zValidator("query", getStaysQuery), async (c) => {
-    try {
-      const { page, limit } = c.req.valid("query");
-      const stays = await db.query.stays.findMany({
-        columns: {
-          id: true,
-          perks: true,
-          title: true,
-          rating: true,
-          pricePerNight: true,
-          baseGuest: true,
-          displayImages: true,
-          discount: true,
-          location: true,
-        },
-        limit: Number(limit),
-      });
-      return c.json({ message: "Fetched stays", data: stays });
-    } catch (error) {
-      return c.json({ message: "Failed to fetch stays" }, 500);
+  .route("/search", searchRoute)
+  .get(
+    "/",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser,
+    zValidator("query", getStaysQuery),
+    async (c) => {
+      try {
+        const loggedInUser = c.get("user");
+        const { page, limit } = c.req.valid("query");
+        // First get all published stays
+        const stays = await db.query.stays.findMany({
+          where: (stays, { eq }) => eq(stays.isPublished, true),
+          limit: Number(limit),
+        });
+
+        // Get user's wishlisted stay IDs
+        const wishlistedStays = await db.query.wishlist.findMany({
+          where: (wishlist, { eq }) => eq(wishlist.userId, loggedInUser.id),
+          columns: { stayId: true },
+        });
+
+        const wishlistedStayIds = new Set(wishlistedStays.map((w) => w.stayId));
+
+        // Add wishlisted flag to each stay
+        const staysWithWishlistFlag = stays.map((stay) => ({
+          ...stay,
+          wishlisted: wishlistedStayIds.has(stay.id),
+        }));
+        return c.json({
+          message: "Fetched stays",
+          data: staysWithWishlistFlag,
+        });
+      } catch (error) {
+        return c.json({ message: "Failed to fetch stays" }, 500);
+      }
     }
-  })
+  )
   .get(
     "/:id",
+    jwt({
+      secret: JWT_SECRET,
+    }),
+    getUser,
     zValidator("param", z.object({ id: z.string().uuid() })),
     async (c) => {
       try {
+        const loggedInUser = c.get("user");
         const { id } = c.req.valid("param");
         const stay = await db.query.stays.findFirst({
           where: (stays, { eq }) => eq(stays.id, id),
         });
+
+        const checkWishlist = await db.query.wishlist.findFirst({
+          where: (wishlist, { eq, and }) =>
+            and(eq(wishlist.stayId, id), eq(wishlist.userId, loggedInUser.id)),
+        });
         if (!stay) {
           return c.json({ message: "Stay not found" }, 404);
         }
-        return c.json({ message: "Fetched stay", data: stay });
+        return c.json({
+          message: "Fetched stay",
+          data: { ...stay, wishlisted: checkWishlist?.stayId ? true : false },
+        });
       } catch (error) {
         return c.json({ message: "Failed to fetch stays" }, 500);
       }
